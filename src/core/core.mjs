@@ -118,6 +118,7 @@ export const instructions_packed = 100;
 
 export { initCAPI }; // Instead of calling it here, which causes circular dependencies, we re-export it so it can be called by the main application.
 let creator_debug = false;
+let creator_kernel = true;
 
 BigInt.prototype.toJSON = function () {
     return JSON.rawJSON(this.toString());
@@ -131,6 +132,9 @@ export function set_debug(enable_debug) {
     } else {
         logger.disable();
     }
+}
+export function set_kernel(enable_kernel) {
+    creator_kernel = enable_kernel;
 }
 /**
  * Load architecture from YAML string and prepare for use
@@ -246,6 +250,11 @@ export function load_library(lib_str) {
         });
 }
 
+export function load_library_sail(lib, lib_name) {
+    loadedLibrary = {name: lib_name, library_file: lib};
+    coreEvents.emit("library-loaded");
+}
+
 /**
  * Removes a library.
  */
@@ -257,7 +266,11 @@ export function remove_library() {
 // compilation
 
 export async function assembly_compile(code, compiler) {
-    const ret = await assembly_compiler(code, false, compiler);
+    var ret;
+    if (Object.keys(loadedLibrary).length === 0)
+        ret = await assembly_compiler(code, false, compiler);
+    else 
+        ret = await assembly_compiler(code, true, compiler);
     switch (ret.status) {
         case "error":
             break;

@@ -307,9 +307,9 @@ if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
       auxinsn.push(1);
       auxinsn.push(labelmatch[2].trim());
       console.log("labelmatch: ", labelmatch);
-      if (/*!app.c_kernel && */labelmatch[2].trim().includes("kernel"))
+      if (!document.app.$data.c_kernel && labelmatch[2].trim().includes("kernel"))
         document.app.$data.entry_elf = parseInt(labelmatch[1].trim(), 16).toString(16); // (labelmatch[1].trim().replace(/0+/,"") === "") ? "0" : labelmatch[1].trim().replace(/0+/,"");
-      else if(labelmatch[2].trim() === "_main" /*&& app.c_kernel*/){
+      else if(labelmatch[2].trim() === "_main" && document.app.$data.c_kernel){
         document.app.$data.entry_elf = parseInt(labelmatch[1].trim(), 16).toString(16); // (labelmatch[1].trim().replace(/0+/,"") === "") ? "0" : labelmatch[1].trim().replace(/0+/,"");
       }
 

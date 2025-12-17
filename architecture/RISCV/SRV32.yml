@@ -2231,6 +2231,19 @@ instructions:
         let addr = CAPI.FP.int2uint(registers[rs1], 32) + imm;
         registers[rd] = CAPI.MEM.read(addr, 4, rd);
       help: Loads a 32-bit value from memory and sign-extends this to XLEN bits before storing it in register rd.
+    - name: ld
+      extension: D
+      template: I-Offset
+      type: Memory access
+      fields:
+        - field: opcode
+          value: "0000011"
+        - field: funct3
+          value: "011"
+      definition: |
+        let addr = CAPI.FP.int2uint(registers[rs1]) + imm;
+        registers[rd] = CAPI.MEM.read(addr, 8, rd);
+      help: Loads a 64-bit value from memory into register rd for RV64I.
     - name: ori
       extension: I
       template: I
@@ -2515,6 +2528,25 @@ instructions:
         CAPI.MEM.write(imm + registers[rs1], 4, BigInt.asUintN(32, registers[rs2]), rs2, 'word');
 
       help: Store 32-bit, values from the low bits of register rs2 to memory.
+
+    - name: sd
+      extension: D
+      template: S
+      fields:
+        - field: opcode
+          value: "0100011"
+        - field: funct3
+          value: "011"
+      definition: |
+        CAPI.MEM.write(
+          imm + registers[rs1],
+          8,
+          BigInt.asUintN(64, registers[rs2]),
+          rs2,
+          "double",
+        );
+      help: Loads a 64-bit value from memory into register rd for RV64I.
+
     - name: auipc
       extension: I
       template: U

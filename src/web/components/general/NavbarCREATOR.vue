@@ -130,7 +130,7 @@ export default defineComponent({
         return true;
       }
       // Check if CreatorCompiler is in the list
-      return assemblers.some((asm: any) => asm.name === "CreatorCompiler");
+      return assemblers.some((asm: any) => (asm.name === "CreatorCompiler" || asm.name === "Sail"));
     },
 
     // Hide mobile navbar when selecting architecture

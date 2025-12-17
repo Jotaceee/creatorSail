@@ -18,7 +18,7 @@ along with CREATOR.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <script lang="ts">
 import { creator_ga } from "@/core/utils/creator_ga.mjs";
-import { set_debug } from "@/core/core.mjs";
+import { set_debug, set_kernel } from "@/core/core.mjs";
 import { Vim } from "@replit/codemirror-vim";
 
 import VimKeybindsModal from "./VimKeybindsModal.vue";
@@ -36,6 +36,7 @@ export default defineComponent({
     instruction_help_size: { type: Number, required: true },
     dark_mode_setting: { type: String, required: true },
     c_debug: { type: Boolean, required: true },
+    c_kernel:{ type: Boolean, required: true },
     vim_custom_keybinds: {
       type: Array as PropType<VimKeybind[]>,
       required: true,
@@ -88,6 +89,7 @@ export default defineComponent({
     "update:instruction_help_size",
     "update:dark_mode_setting",
     "update:c_debug",
+    "update:c_kernel",
     "update:vim_custom_keybinds",
     "update:vim_mode",
     "update:backup",
@@ -271,6 +273,23 @@ export default defineComponent({
           "configuration",
           "configuration.debug_mode",
           "configuration.debug_mode." + value,
+        );
+      },
+    },
+    c_kernel_value: {
+      get() {
+        return this.c_kernel;
+      },
+      set(value: boolean) {
+        set_kernel(value);
+
+        this.$emit("update:c_kernel", value);
+
+        //Google Analytics
+        creator_ga(
+          "configuration",
+          "configuration.kernel_mode",
+          "configuration.kernel_mode." + value,
         );
       },
     },
@@ -560,6 +579,15 @@ export default defineComponent({
           :options="reg_representation_int_options"
           size="sm"
           class="representation-select"
+        /> </b-list-group-item
+      > <b-list-group-item
+        class="justify-content-between align-items-center config-item"
+        > <label for="range-6">Kernel Simulator:</label> <b-form-checkbox
+          id="range-6"
+          v-model="c_kernel_value"
+          name="check-button"
+          switch
+          size="lg"
         /> </b-list-group-item
       > </b-list-group
     > </b-modal

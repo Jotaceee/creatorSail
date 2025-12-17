@@ -5224,6 +5224,9 @@ function run(args = arguments_) {
     args.shift();
     FS.writeFile("./input.o", args[0]);
     args.shift();
+    for (let i = 0; i < libs_to_load.length; i++){
+      FS.writeFile("./" + libs_to_load[i].name, libs_to_load[i].file);
+    }
     preMain();
     // readyPromiseResolve(Module);
     Module["onRuntimeInitialized"]?.();

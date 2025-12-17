@@ -1,4 +1,5 @@
 let elfile = null;
+import { libs_to_load } from "../CNAssambler.mjs";
 var Module = (() => {
   var _scriptDir = import.meta.url;
   
@@ -5825,6 +5826,9 @@ function run(args) {
   args.shift();
   FS.writeFile("./input.o", args[0]);
   args.shift();
+  for (let i = 0; i < libs_to_load.length; i++){
+    FS.writeFile("./" + libs_to_load[i].name, libs_to_load[i].file);
+  }
   preMain();
   readyPromiseResolve(Module);
   if (Module["onRuntimeInitialized"]) Module["onRuntimeInitialized"]();

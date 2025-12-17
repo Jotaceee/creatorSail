@@ -694,10 +694,10 @@ var Module = (() => {
             prev_add_to_jump = current_ins;
           }
 
-          creator_callstack_enter(instructions[next_add_to_jump].Label); 
-          track_stack_enter(instructions[next_add_to_jump].Label);
-          callstack_convention.push(structuredClone(registers_before_function));
-          inside_function = true;
+          // creator_callstack_enter(instructions[next_add_to_jump].Label); 
+          // track_stack_enter(instructions[next_add_to_jump].Label);
+          // callstack_convention.push(structuredClone(registers_before_function));
+          // inside_function = true;
 
           console.log("Siguiente direccion del jalr: ", next_add);
         } 
@@ -713,10 +713,10 @@ var Module = (() => {
           next_add_to_jump = instructions.findIndex(insn => ( '0x' + (insn.Address.slice(2))) === ("0x"+next_add_to_jump.toLowerCase()));
           if (next_add_to_jump !== -1) {
             prev_add_to_jump = current_ins;
-            track_stack_leave();
-            creator_callstack_leave();
-            callstack_convention.pop();
-            inside_function = (callstack_convention.length > 0); 
+            // track_stack_leave();
+            // creator_callstack_leave();
+            // callstack_convention.pop();
+            // inside_function = (callstack_convention.length > 0); 
           } else {
             next_add_to_jump = undefined;
           }

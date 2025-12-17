@@ -358,9 +358,9 @@ if (ENVIRONMENT_IS_NODE) {
       auxinsn.push(1);
       auxinsn.push(labelmatch[2].trim());
       console.log("labelmatch: ", labelmatch);
-      if (/*!app.c_kernel && */labelmatch[2].trim().includes("kernel"))
+      if (!document.app.$data.c_kernel && labelmatch[2].trim().includes("kernel"))
         document.app.$data.entry_elf = labelmatch[1].trim();
-      else if(labelmatch[2].trim() === "_main" /*&& app.c_kernel*/){
+      else if(labelmatch[2].trim() === "_main" && document.app.$data.c_kernel){
         document.app.$data.entry_elf = labelmatch[1].trim();
       }
 

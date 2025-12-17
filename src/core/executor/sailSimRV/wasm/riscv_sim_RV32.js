@@ -890,15 +890,15 @@ var Module = (() => {
           var aux_reg = crex_findReg(match[2]);
           var aux_val = readRegister(aux_reg.indexComp, aux_reg.indexElem);
           
-          next_add_to_jump = (aux_val + parseInt(match[1], 10)).toString(16);
+          next_add_to_jump = (aux_val + BigInt(parseInt(match[1], 10))).toString(16);
           next_add_to_jump = instructions.findIndex(insn => insn.Address === ("0x"+next_add_to_jump.toLowerCase()));
           prev_add_to_jump = current_ins;
 
           // var stack_entry_func = instructions[next_add_to_jump].label;
-          creator_callstack_enter(instructions[next_add_to_jump].Label); 
-          track_stack_enter(instructions[next_add_to_jump].Label);
-          callstack_convention.push(structuredClone(registers_before_function));
-          inside_function = true;
+          // creator_callstack_enter(instructions[next_add_to_jump].Label); 
+          // track_stack_enter(instructions[next_add_to_jump].Label);
+          // callstack_convention.push(structuredClone(registers_before_function));
+          // inside_function = true;
         }
         if (instructions[current_ins].loaded.includes("jal") && !instructions[current_ins].loaded.includes("jalr")){
           var next_add = instructions[current_ins].loaded.split("\t");
@@ -911,10 +911,10 @@ var Module = (() => {
           next_add_to_jump = instructions.findIndex(insn => insn.Address === ("0x"+next_add_to_jump.toLowerCase()));
           if (next_add_to_jump !== -1){
             prev_add_to_jump = current_ins;
-            track_stack_leave();
-            creator_callstack_leave();
-            callstack_convention.pop();
-            inside_function = (callstack_convention.length > 0); 
+            // track_stack_leave();
+            // creator_callstack_leave();
+            // callstack_convention.pop();
+            // inside_function = (callstack_convention.length > 0); 
           }else
             next_add_to_jump = undefined;
         }

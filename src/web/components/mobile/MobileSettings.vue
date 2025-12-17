@@ -31,6 +31,7 @@ export default defineComponent({
     instruction_help_size: { type: Number, required: true },
     dark_mode_setting: { type: String, required: true },
     c_debug: { type: Boolean, required: true },
+    c_kernel: { type: Boolean, required: true },
     vim_mode: { type: Boolean, required: true },
     vim_custom_keybinds: {
       type: Array as PropType<VimKeybind[]>,
@@ -49,6 +50,7 @@ export default defineComponent({
     "update:instruction_help_size",
     "update:dark_mode_setting",
     "update:c_debug",
+    "update:c_kernel",
     "update:vim_mode",
     "update:backup",
     "update:reg_representation_int",
@@ -205,6 +207,23 @@ export default defineComponent({
           "configuration",
           "configuration.debug_mode",
           "configuration.debug_mode." + value,
+        );
+      },
+    },
+
+    c_kernel_value: {
+      get() {
+        return this.c_kernel;
+      },
+      set(value: boolean) {
+        set_debug(value);
+        this.$emit("update:c_kernel", value.toString());
+
+        //Google Analytics
+        creator_ga(
+          "configuration",
+          "configuration.kernel_mode",
+          "configuration.kernel_mode." + value,
         );
       },
     },

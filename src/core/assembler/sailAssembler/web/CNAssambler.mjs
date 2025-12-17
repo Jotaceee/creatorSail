@@ -11,17 +11,19 @@ import as64Module from "./wasm/as-new64.js"
 import ld64Module from "./wasm/ld-new64.js"
 import dump64Module from "./wasm/objdump64.js"
 import { vectorins, loadlinker} from "../CREATORNAssembler.mjs"
-import { architecture, setPC } from "../../../core.mjs";
+import { architecture, loadedLibrary, setPC } from "../../../core.mjs";
 import { updateMainMemoryBackup, main_memory, WORDSIZE, BYTESIZE, backup_stack_address, backup_data_address } from "@/core/core.mjs";
 // import { init } from "@/core/executor/executor.mjs";
 
 let sailas, sailld, saildump = null;
+export var libs_to_load = [];
 var list_data_instructions = [];
 var list_user_instructions = [];
 var align = 1;
 var stack_address = 0;
 var ins_filter;
 var extensions = [];
+export var outfile = null;
 
 const locateFile = (path) => {
   // Cuando Emscripten pida el .wasm, dale la URL real
@@ -37,7 +39,7 @@ function identify_pseudo(instruction_assembly){
       extensions.push(ins_filter[extensionid].type);
   }
   // console.log("architecture", architecture);
-  if(instruction_assembly.search("li") != -1 && instruction_assembly.search("vsetvli") === -1 && !(instruction_assembly.includes(".section") || instruction_assembly.includes(".globl") || instruction_assembly.includes(".include") || instruction_assembly.includes(".init"))){
+  if(instruction_assembly.search("li") != -1 && instruction_assembly.search("slli") === -1 && instruction_assembly.search("vsetvli") === -1 && !(instruction_assembly.includes(".section") || instruction_assembly.includes(".globl") || instruction_assembly.includes(".include") || instruction_assembly.includes(".init"))){
     list_user_instructions.push(instruction_assembly);
     let parts = instruction_assembly.split(',');
     if (!(-2048 >= parseInt(parts[1]?.trim(), 16)) && !(parseInt(parts[1]?.trim(), 16) <= 2047)){
@@ -58,7 +60,7 @@ function identify_pseudo(instruction_assembly){
     }
   else if (instruction_assembly.search("ecall") != -1 && !(instruction_assembly.includes(".section") || instruction_assembly.includes(".globl") || instruction_assembly.includes(".include") || instruction_assembly.includes(".init")))
     list_user_instructions.push(instruction_assembly);
-  else if (instruction_assembly.search("call") != -1 && !(instruction_assembly.search("ecall") != -1) && !(instruction_assembly.includes(".section") || instruction_assembly.includes(".globl") || instruction_assembly.includes(".include") || instruction_assembly.includes(".init")))
+  else if (instruction_assembly.search("call") != -1 && (/^call\t/.test(instruction_assembly)) && !(instruction_assembly.search("ecall") != -1) && !(instruction_assembly.includes(".section") || instruction_assembly.includes(".globl") || instruction_assembly.includes(".include") || instruction_assembly.includes(".init")))
   {
     list_user_instructions.push(instruction_assembly);
     if (architecture.config.word_size == 32)
@@ -948,6 +950,10 @@ export async function as(code){
         }
       }
     }
+
+    if (!document.app.$data.c_kernel) // Custom kernel case
+      march = march + "_zicsr";
+
     let asargs = [march, mabi, code];
     console.log(asargs);
     let outfile = null;
@@ -1015,7 +1021,14 @@ export async function ld(objfile, libs) {
     // ld32Module.FS.writeFile('linker.ld', linker);
 
     /* Load linker script to generate elffile */
-    let elf = sailld.run([linker, objfile, "-T", "linker.ld", "-o", "output.elf", "input.o"]);
+    var elf;
+    if (libs){
+      libs_to_load.push({name: loadedLibrary.name, file: loadedLibrary.library_file});
+      elf = sailld.run([linker, objfile, "-T", "linker.ld", "-o", "output.elf", "input.o", loadedLibrary.name]);
+    } else {
+      elf = sailld.run([linker, objfile, "-T", "linker.ld", "-o", "output.elf", "input.o"]);
+    
+    }
     /* Load files to wasm program */
 
     return elf/* Return elfile to dump it*/;
@@ -1196,8 +1209,15 @@ export async function dump(file){
 
     setInstructions(instructions);
     setAddress(architecture.memory_layout.text.start);
-    setPC(BigInt(parseInt(document.app.$data.entry_elf, 16)));
-    
+    if (document.app.$data.entry_elf !== undefined)
+      setPC(BigInt(parseInt(document.app.$data.entry_elf, 16)));
+    else { // Set first function to entry elf
+      let ind = instructions.findIndex(insn => (insn.Label !== undefined && insn.Label !== ""));
+      if (ind !== -1) {
+        document.app.$data.entry_elf = instructions[ind].Address;
+        setPC(BigInt(parseInt(document.app.$data.entry_elf, 16)));
+      }
+    }
 
     return {status: "ok", msg: ""}/* Return list of instructions and data to display in simulator view */;
 }
@@ -1206,6 +1226,7 @@ export async function SailCompile(files, libs){
   console.log(architecture.instructions);
     ins_filter = (ins_filter === undefined) ? architecture.instructions.map(insn => ({opcode: insn.name, type: insn.extension})) : ins_filter;
     // console.log("SAil assemble");
+    libs_to_load.length = 0;
     dumptextinstructions64.length = 0;
     dumpdatainstructions64.length = 0;
     dumptextinstructions32.length = 0;
@@ -1345,9 +1366,10 @@ export async function SailCompile(files, libs){
         sailas = null;
         sailld = null;
         saildump = null;
+        outfile = null;
     }
 
-    let outfile = await as(files);
+    outfile = await as(files);
     let elffile = await ld(outfile, libs);
     let outdump = await dump(elffile);
     document.app.$data.L1_I_num_lines  = 32;
@@ -1375,7 +1397,7 @@ export async function SailCompile(files, libs){
     document.app.$data.execution_mode_run = -1;
     document.app.$data.is_breakpoint = 0;
     document.app.$data.binary = elffile;
-    document.app.$data.c_kernel = true;
+    // document.app.$data.c_kernel = true;
     document.app.$data.instructions = instructions;
     // setPC(BigInt(parseInt(document.app.$data.entry_elf, 16)));
     

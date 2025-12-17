@@ -205,6 +205,9 @@ export default {
       // Debug
       c_debug: false,
 
+      // Kernel simulator
+      c_kernel: true,
+
       // Dark Mode
       dark: false, // the actual dark mode state
       dark_mode_setting:
@@ -654,6 +657,7 @@ export default {
       v-model:notification_time="notification_time"
       v-model:dark_mode_setting="dark_mode_setting"
       v-model:c_debug="c_debug"
+      v-model:c_kernel="c_kernel"
       v-model:vim_custom_keybinds="vim_custom_keybinds"
       v-model:vim_mode="vim_mode"
       v-model:reg_representation_int="reg_representation_int"
@@ -765,6 +769,7 @@ export default {
     v-model:instruction_help_size="instruction_help_size"
     v-model:dark_mode_setting="dark_mode_setting"
     v-model:c_debug="c_debug"
+    v-model:c_kernel="c_kernel"
     v-model:vim_mode="vim_mode"
     v-model:vim_custom_keybinds="vim_custom_keybinds"
     v-model:reg_representation_int="reg_representation_int"
