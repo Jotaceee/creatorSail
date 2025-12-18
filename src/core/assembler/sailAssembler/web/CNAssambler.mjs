@@ -13,6 +13,7 @@ import dump64Module from "./wasm/objdump64.js"
 import { vectorins, loadlinker} from "../CREATORNAssembler.mjs"
 import { architecture, loadedLibrary, setPC } from "../../../core.mjs";
 import { updateMainMemoryBackup, main_memory, WORDSIZE, BYTESIZE, backup_stack_address, backup_data_address } from "@/core/core.mjs";
+import { show_notification } from "../../../../web/utils.mjs";
 // import { init } from "@/core/executor/executor.mjs";
 
 let sailas, sailld, saildump = null;
@@ -24,6 +25,8 @@ var stack_address = 0;
 var ins_filter;
 var extensions = [];
 export var outfile = null;
+export var vectoren = false;
+export var doubleen = false;
 
 const locateFile = (path) => {
   // Cuando Emscripten pida el .wasm, dale la URL real
@@ -348,38 +351,40 @@ export function writeDataDumpMemory32(){
             break;
         case "double":
             if (dumpdatainstructions32[i][5] === 0){
-            align = 2;
+              align = 2;
             } else {
-            align = dumpdatainstructions32[i][5];
+              align = dumpdatainstructions32[i][5];
             }
             if(dumpdatainstructions32[i][1].length > 16){
-            var init_add = parseInt(dumpdatainstructions32[i][0], 16);
-            var elements = Math.floor(dumpdatainstructions32[i][1].length / 16);
-            if(dumpdatainstructions32[i][1].length % 16 !== 0){
-                elements = elements + 1;
-                dumpdatainstructions32[i][1] = dumpdatainstructions32[i][1].padStart(elements*16,"0");
-            }
-            for (var j = 0; j < elements; j++){
-                let bufferd = new ArrayBuffer(8); // 8 bytes para double
-                let viewd = new DataView(bufferd);
+              var init_add = parseInt(dumpdatainstructions32[i][0], 16);
+              var elements = Math.floor(dumpdatainstructions32[i][1].length / 16);
+              if(dumpdatainstructions32[i][1].length % 16 !== 0){
+                  elements = elements + 1;
+                  dumpdatainstructions32[i][1] = dumpdatainstructions32[i][1].padStart(elements*16,"0");
+              }
+              for (var j = 0; j < elements; j++){
 
+                  const doubleValue = dumpdatainstructions32[i][1].slice(dumpdatainstructions32[i][1].length - (j + 1) * 16, dumpdatainstructions32[i][1].length - (16 * j));
 
-                var element_to_insert = dumpdatainstructions32[i][1].slice(dumpdatainstructions32[i][1].length - (j + 1) * 16, dumpdatainstructions32[i][1].length - (16 * j));
+                  let bufferd = new ArrayBuffer(8); // 8 bytes para double
+                  let viewd = new DataView(bufferd);
+                  for (let j = 0; j < 8; j++){
+                    viewd.setUint8(7 - j, parseInt(doubleValue.slice(j * 2, j * 2 + 2), 16));
 
-                // Convertir hexadecimal a entero
-                let high = parseInt(element_to_insert.slice(0, 8), 16); // Parte alta
-                let low = parseInt(element_to_insert.slice(8, 16), 16); // Parte baja
+                  }
+                  const doubleBytes = new Uint8Array(8);
+                  for (let j = 0; j < 8; j++) {
+                    doubleBytes[j] = viewd.getUint8(7 - j);
+                  }
+                  
 
-                // Escribir los valores en el buffer
-                viewd.setUint32(0, high, false); // Parte alta
-                viewd.setUint32(4, low, false);  // Parte baja
-                main_memory.write(BigInt(init_add + j *8), Number(element_to_insert));
-                // if (j === 0 )
-                // creator_memory_data_compiler(init_add + j*8, element_to_insert, 8, dumpdatainstructions32[i][4], viewd.getFloat64(0, false), dumpdatainstructions32[i][6],);
-                // else
-                // creator_memory_data_compiler(init_add + j*8, element_to_insert, 8, null, viewd.getFloat64(0, false), dumpdatainstructions32[i][6],);
+                  writeMultiByteValueAsWords(BigInt(init_add + j *8), doubleBytes, 4);
 
-            }
+              }
+
+              const doubleTag = dumpdatainstructions32[i][4] ?? "";
+              const doubleType = "float64";
+              main_memory.addHint(BigInt(parseInt(dumpdatainstructions32[i][0], 16)), doubleTag, doubleType, 64 * elements);
             }else {
               const doubleValue = dumpdatainstructions32[i][1];
               // console.log(doubleValue);
@@ -399,7 +404,7 @@ export function writeDataDumpMemory32(){
 
               const doubleTag = dumpdatainstructions32[i][4] ?? "";
               const doubleType = "float64";
-              main_memory.addHint(BigInt(parseInt(dumpdatainstructions32[i][0], 16)), doubleTag, doubleType, 64)
+              main_memory.addHint(BigInt(parseInt(dumpdatainstructions32[i][0], 16)), doubleTag, doubleType, 64);
               // Convertir hexadecimal a entero
               // let high = parseInt(dumpdatainstructions32[i][1].slice(0, 8), 16); // Parte alta
               // let low = parseInt(dumpdatainstructions32[i][1].slice(8, 16), 16); // Parte baja
@@ -702,26 +707,30 @@ export function writeDataDumpMemory64(){
                 dumpdatainstructions64[i][1] = dumpdatainstructions64[i][1].padStart(elements*16,"0");
             }
             for (var j = 0; j < elements; j++){
-                let bufferd = new ArrayBuffer(8); // 8 bytes para double
-                let viewd = new DataView(bufferd);
 
 
-                var element_to_insert = dumpdatainstructions64[i][1].slice(dumpdatainstructions64[i][1].length - (j + 1) * 16, dumpdatainstructions64[i][1].length - (16 * j));
+              const doubleValue = dumpdatainstructions64[i][1].slice(dumpdatainstructions64[i][1].length - (j + 1) * 16, dumpdatainstructions64[i][1].length - (16 * j));
+              // console.log(doubleValue);
+              let bufferd = new ArrayBuffer(8); // 8 bytes para double
+              let viewd = new DataView(bufferd);
+              for (let j = 0; j < 8; j++){
+                viewd.setUint8(7 - j, parseInt(doubleValue.slice(j * 2, j * 2 + 2), 16));
 
-                // Convertir hexadecimal a entero
-                let high = parseInt(element_to_insert.slice(0, 8), 16); // Parte alta
-                let low = parseInt(element_to_insert.slice(8, 16), 16); // Parte baja
+              }
+              const doubleBytes = new Uint8Array(8);
+              for (let j = 0; j < 8; j++) {
+                doubleBytes[j] = viewd.getUint8(7 - j);
+              }
+              
 
-                // Escribir los valores en el buffer
-                viewd.setUint32(0, high, false); // Parte alta
-                viewd.setUint32(4, low, false);  // Parte baja
-                main_memory.write(BigInt(init_add + j *8), Number(element_to_insert));
-                // if (j === 0 )
-                // creator_memory_data_compiler(init_add + j*8, element_to_insert, 8, dumpdatainstructions64[i][4], viewd.getFloat64(0, false), dumpdatainstructions64[i][6],);
-                // else
-                // creator_memory_data_compiler(init_add + j*8, element_to_insert, 8, null, viewd.getFloat64(0, false), dumpdatainstructions64[i][6],);
+              writeMultiByteValueAsWords(BigInt(init_add + j *8), doubleBytes, 4);
 
             }
+
+              const doubleTag = dumpdatainstructions64[i][4] ?? "";
+              const doubleType = "float64";
+              main_memory.addHint(BigInt(parseInt(dumpdatainstructions64[i][0], 16)), doubleTag, doubleType, 64 * elements);
+
             }else {
               const doubleValue = dumpdatainstructions64[i][1];
               // console.log(doubleValue);
@@ -881,7 +890,6 @@ export async function as(code){
     /* Now we have to check which extensions are enabled during the process */
     var march = "-march=rv";
     var mabi = "-mabi=ilp";
-    var vectoren = false;
     if (architecture.config.name === "SRV32") {
       march = march + "32i";
       mabi = mabi + "32";
@@ -901,10 +909,12 @@ export async function as(code){
           case "D":
             march = march + "d";
             mabi = "-mabi=ilp32d";
+            doubleen = true;
           break;
           case "V":
             march = march + "v";
             mabi = "-mabi=ilp32d";
+            vectoren = true;
           break;
         }
       }
@@ -915,7 +925,8 @@ export async function as(code){
           vectoren = !vectoren;
         }
       }
-
+      // if (vectoren && doubleen)
+      //   show_notification("Using double data type with vectors may generate and inconsistent execution result, try on 64 bits architecture", "warning");
     } else {
       march = march + "64i";
       mabi = "-mabi=lp64";
@@ -1223,7 +1234,9 @@ export async function dump(file){
 }
 
 export async function SailCompile(files, libs){
-  console.log(architecture.instructions);
+  vectoren = false;
+  doubleen = false;
+  extensions.length = 0;
     ins_filter = (ins_filter === undefined) ? architecture.instructions.map(insn => ({opcode: insn.name, type: insn.extension})) : ins_filter;
     // console.log("SAil assemble");
     libs_to_load.length = 0;
@@ -1362,11 +1375,11 @@ export async function SailCompile(files, libs){
 
 
     if (sailas !== null || sailld !== null || saildump !== null)
-    {
-        sailas = null;
-        sailld = null;
-        saildump = null;
-        outfile = null;
+    {   
+      sailas = null;
+      sailld = null;
+      saildump = null;
+      outfile = null;
     }
 
     outfile = await as(files);
@@ -1401,7 +1414,7 @@ export async function SailCompile(files, libs){
     document.app.$data.instructions = instructions;
     // setPC(BigInt(parseInt(document.app.$data.entry_elf, 16)));
     
-    console.log(ins_filter);
-    console.log(architecture.instructions);
+    // console.log(ins_filter);
+    // console.log(architecture.instructions);
     return outdump;
 }

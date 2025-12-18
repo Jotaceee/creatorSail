@@ -1,4 +1,5 @@
 let elfile = null;
+import { libs_to_load } from "../CNAssambler.mjs";
 var Module = (() => {
   var _scriptName = import.meta.url;
   
