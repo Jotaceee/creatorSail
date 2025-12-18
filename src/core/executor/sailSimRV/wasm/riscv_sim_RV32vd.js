@@ -4292,11 +4292,27 @@ var Module = (() => {
       }
       quit_(code, new ExitStatus(code));
     };
-    var exitJS = (status, implicit) => {
-      EXITSTATUS = status;
+    var exitJS = (statusw, implicit) => {
+      EXITSTATUS = statusw;
       checkUnflushedContent();
       if (keepRuntimeAlive() && !implicit) {
-        var msg = `program exited (with status: ${status}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
+        for (let i = 0; i < instructions.length; i++){
+          instructions[i]._rowVariant = '';
+        }
+        status.run_program = -1; // program finished
+        if (statusw !== 0){
+          reset_disable.value = false;
+          instruction_disable.value = true;
+          run_disable.value = true;
+          stop_disable.value = false;
+          show_notification("Your program has finished with errors.", "danger");
+        } else {
+          reset_disable.value = false;
+          instruction_disable.value = false;
+          run_disable.value = false;
+          stop_disable.value = true;
+        }
+        var msg = `program exited (with status: ${statusw}), but keepRuntimeAlive() is set (counter=${runtimeKeepaliveCounter}) due to an async operation, so halting execution but not exiting the runtime or preventing further async execution (you can use emscripten_force_exit, if you want to force a true shutdown)`;
         readyPromiseReject(msg);
         err(msg);
       }
